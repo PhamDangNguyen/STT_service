@@ -1,0 +1,45 @@
+[
+  {
+    "_id": "6a0e85c5d53b217361854b62",
+    "audio_url": "http://72.62.70.235:9000/document/zrc-uivc-xvh_zrc-uivc-xvh-5618bd8a.wav",
+    "mindmap": "",
+    "summary": "# Tóm Tắt Cuộc Họp Phát Triển Tính Năng",
+    "transcript": [
+      {
+        "start": 3.72,
+        "duration": 2.52,
+        "text": "Ừ.",
+        "speaker": "Minh Nguyễn Lê"
+      }
+    ],
+    "slide_url": "",
+    "suggestions": [
+      {
+        "type": "jira",
+        "description": "Bổ sung task làm tính năng chatbot?",
+        "payload": {
+          "title": "Tính năng chatbot",
+          "description": "Build aaa",
+          "assignee": "Thành Phạm",
+          "startDate": "2024-10-24T12:38:37.486Z",
+          "duedate": "2024-10-24T12:38:37.486Z",
+          "priority": "medium",
+          "reporter": "Minh Nguyễn Lê"
+        }
+      }
+    ],
+    "createdAt": "2024-10-24T12:38:37.486000",
+    "updatedAt": "2024-10-24T12:38:37.486000"
+  },
+  {
+    "_id": "6a0e8926d53b217361854b64",
+    "audio_url": "http://72.62.70.235:9000/document/zrc-uivc-xvh_zrc-uivc-xvh-efa587ce.wav",
+    "mindmap": "",
+    "summary": "",
+    "transcript": [],
+    "slide_url": "",
+    "suggestions": [],
+    "createdAt": "2024-10-24T12:38:37.486000",
+    "updatedAt": "2024-10-24T12:38:37.486000"
+  }
+]
