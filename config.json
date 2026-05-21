@@ -1,0 +1,27 @@
+{
+  "mongodb": {
+    "db": "funny_hunter",
+    "collection": "notes"
+  },
+  "vad": {
+    "model": "silero-vad"
+  },
+  "diarization": {
+    "model": "pyannote/speaker-diarization-3.1"
+  },
+  "embedding": {
+    "model": "pyannote/embedding"
+  },
+  "stt": {
+    "model": "large-v3",
+    "compute_type": "float16"
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o"
+  },
+  "device": "cuda",
+  "progress": {
+    "ttl_seconds": 3600
+  }
+}
