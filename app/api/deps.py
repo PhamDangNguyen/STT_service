@@ -49,18 +49,29 @@ def get_transcribe_service(
     progress_store: Annotated[ProgressStore, Depends(get_progress_store)],
 ) -> TranscribeService:
     settings = state.settings
-    llm_api_key = (
-        settings.anthropic_api_key
-        if settings.llm_provider == "anthropic"
-        else settings.openai_api_key
-    )
+    if settings.llm_provider == "anthropic":
+        llm_api_key = settings.anthropic_api_key
+    elif settings.llm_provider == "openai":
+        llm_api_key = settings.openai_api_key
+    else:  # local or any OpenAI-compatible server
+        llm_api_key = ""
     pipeline = PipelineRunner(
         audio_loader=AudioLoaderStep(),
-        vad=VADStep(state.vad_model, state.vad_utils),
-        diarization=DiarizationStep(state.diarization_pipeline),
-        verification=VerificationStep(state.embedding_model),
-        stt=STTStep(state.whisper_model),
-        llm_norm=LLMNormStep(settings.llm_provider, settings.llm_model, llm_api_key),
+        vad=VADStep(state.vad_model, state.vad_utils, device=settings.device, chunk_max_seconds=settings.vad_chunk_max_seconds),
+        diarization=DiarizationStep(
+            state.diarization_pipeline,
+            embedding_model=state.embedding_model,
+            device=settings.device,
+            similarity_threshold=settings.diarization_similarity_threshold,
+        ),
+        verification=VerificationStep(state.embedding_model, device=settings.device),
+        stt=STTStep(state.whisper_model, min_duration_seconds=settings.stt_min_duration_seconds),
+        llm_norm=LLMNormStep(
+            settings.llm_provider,
+            settings.llm_model,
+            llm_api_key,
+            base_url=settings.llm_base_url,
+        ),
         progress_store=progress_store,
     )
     return TranscribeService(note_repo, pipeline, progress_store)

@@ -4,24 +4,39 @@
     "collection": "notes"
   },
   "vad": {
-    "model": "silero-vad"
+    "activate": true,
+    "model": "silero-vad",
+    "chunk_max_seconds": 300
   },
   "diarization": {
-    "model": "pyannote/speaker-diarization-3.1"
+    "activate": true,
+    "model": "pyannote/speaker-diarization-3.1",
+    "similarity_threshold": 0.9
   },
   "embedding": {
+    "activate": true,
     "model": "pyannote/embedding"
   },
   "stt": {
-    "model": "large-v3",
-    "compute_type": "float16"
+    "activate": true,
+    "model": "erax-ai/EraX-WoW-Turbo-V1.1-CT2",
+    "compute_type": "float16",
+    "min_duration_seconds": 0.03
   },
   "llm": {
+    "activate": true,
     "provider": "openai",
-    "model": "gpt-4o"
+    "model": "gpt-4o",
+    "base_url": ""
   },
   "device": "cuda",
   "progress": {
     "ttl_seconds": 3600
+  },
+  "logging": {
+    "level": "INFO",
+    "folder": "logs",
+    "max_bytes": 10485760,
+    "backup_count": 10
   }
 }

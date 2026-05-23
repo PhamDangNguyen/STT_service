@@ -16,8 +16,9 @@ SAMPLE_RATE = 16_000
 
 
 class VerificationStep(PipelineStep[VerificationInput, VerificationOutput]):
-    def __init__(self, embedding_model=None):
+    def __init__(self, embedding_model=None, device: str = "cpu"):
         self._model = embedding_model
+        self._device = device
 
     async def run(self, input: VerificationInput) -> VerificationOutput:
         if not input.speaker_profiles or self._model is None:
@@ -55,10 +56,10 @@ class VerificationStep(PipelineStep[VerificationInput, VerificationOutput]):
         buf = io.BytesIO()
         sf.write(buf, audio, SAMPLE_RATE, format="WAV", subtype="PCM_16")
         buf.seek(0)
-        waveform = torch.from_numpy(audio).unsqueeze(0)
+        waveform = torch.from_numpy(audio).unsqueeze(0).to(self._device)
         with torch.no_grad():
             emb = self._model({"waveform": waveform, "sample_rate": SAMPLE_RATE})
-        return emb.squeeze().numpy()
+        return emb.squeeze().cpu().numpy()
 
     @staticmethod
     def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:

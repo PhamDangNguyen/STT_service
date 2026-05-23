@@ -40,7 +40,7 @@ class VADOutput(_NpModel):
 
 # DiarizationStep
 class DiarizationInput(_NpModel):
-    audio: AudioArray
+    chunks: list[AudioChunk]
     sample_rate: int
     num_speakers: int | None = None
 
