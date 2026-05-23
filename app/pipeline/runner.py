@@ -72,7 +72,7 @@ class PipelineRunner:
         t0 = time.perf_counter()
         logger.debug("Step DiarizationStep begin | note_id=%s", note_id)
         diar_out = await self._diarization.run(
-            DiarizationInput(audio=audio_out.audio, sample_rate=audio_out.sample_rate)
+            DiarizationInput(chunks=vad_out.chunks, sample_rate=audio_out.sample_rate)
         )
         logger.info(
             "Step DiarizationStep done | note_id=%s segments=%d elapsed=%.2fs",
@@ -125,7 +125,8 @@ class PipelineRunner:
         await ps.update(note_id, 90, "LLMNormStep")
         t0 = time.perf_counter()
         logger.debug("Step LLMNormStep begin | note_id=%s", note_id)
-        norm_out = await self._llm_norm.run(LLMNormInput(segments=stt_out.segments))
+        non_silent = [s for s in stt_out.segments if s.text != "<silent>"]
+        norm_out = await self._llm_norm.run(LLMNormInput(segments=non_silent))
         logger.info("Step LLMNormStep done | note_id=%s elapsed=%.2fs", note_id, time.perf_counter() - t0)
 
         total_elapsed = time.perf_counter() - pipeline_start

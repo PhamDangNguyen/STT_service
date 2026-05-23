@@ -1,0 +1,1 @@
+curl "http://localhost:8000/api/transcribe/6a0e85c5d53b217361854b62/status"

@@ -3,6 +3,15 @@ from ..models.progress import ProgressRecord, ProgressStatus
 
 
 class InMemoryProgressStore:
+    """
+    Class help update and manage progress in service. Auto remove progress record after ttl_seconds since it is marked as done or error.
+     - init(note_id): create new progress record with status pending and progress 0
+     - update(note_id, progress, step): update progress record with status processing, given progress and step
+     - finish(note_id): update progress record with status done and progress 100
+     - fail(note_id, error): update progress record with status error and given error message
+     - get(note_id): get progress record by note_id, return None if not found or expired
+     - _evict_expired(): internal method to remove expired progress records
+    """
     def __init__(self, ttl_seconds: int = 3600):
         self._records: dict[str, ProgressRecord] = {}
         self._finalized_at: dict[str, datetime] = {}

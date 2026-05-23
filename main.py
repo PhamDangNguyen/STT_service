@@ -6,6 +6,7 @@ from app.logging_setup import setup_logging, get_logger
 from app.state import AppState
 from app.stores.memory_store import InMemoryProgressStore
 from app.api.routes import router
+from rich import print
 
 logger = get_logger(__name__)
 
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
         f"mongodb+srv://{settings.mongodb_username}:{settings.mongdb_password}"
         f"@cluster0.0h1sfbi.mongodb.net/{settings.mongodb_db}"
     )
+    print("GetSettings: ", settings)
     progress_store = InMemoryProgressStore(ttl_seconds=settings.progress_ttl_seconds)
 
     vad_model = None
@@ -29,55 +31,72 @@ async def lifespan(app: FastAPI):
     embedding_model = None
     whisper_model = None
 
-    try:
-        import torch
-        logger.info("Loading VAD model (silero-vad)...")
-        vad_model, vad_utils = torch.hub.load(
-            repo_or_dir="snakers4/silero-vad",
-            model="silero_vad",
-            force_reload=False,
-        )
-        logger.info("VAD model loaded.")
-    except Exception as e:
-        logger.warning("VAD model not loaded: %s", e)
+    if settings.vad_activate:
+        try:
+            import torch
+            logger.info("Loading VAD model (silero-vad)...")
+            vad_model, vad_utils = torch.hub.load(
+                repo_or_dir="snakers4/silero-vad",
+                model="silero_vad",
+                force_reload=False,
+            )
+            vad_model = vad_model.to(settings.device)
+            logger.info("VAD model loaded (device=%s).", settings.device)
+        except Exception as e:
+            logger.warning("VAD model not loaded: %s", e)
+    else:
+        logger.info("VAD model skipped (activate=false).")
 
-    try:
-        from pyannote.audio import Pipeline
-        logger.info("Loading diarization pipeline (%s)...", settings.diarization_model)
-        diarization_pipeline = Pipeline.from_pretrained(
-            settings.diarization_model,
-            use_auth_token=settings.pyannote_token,
-        )
-        logger.info("Diarization pipeline loaded.")
-    except Exception as e:
-        logger.warning("Diarization pipeline not loaded: %s", e)
+    if settings.diarization_activate:
+        try:
+            import torch
+            from pyannote.audio import Pipeline
+            logger.info("Loading diarization pipeline (%s)...", settings.diarization_model)
+            diarization_pipeline = Pipeline.from_pretrained(
+                settings.diarization_model,
+                token=settings.pyannote_token,
+            )
+            diarization_pipeline = diarization_pipeline.to(torch.device(settings.device))
+            logger.info("Diarization pipeline loaded (device=%s).", settings.device)
+        except Exception as e:
+            logger.warning("Diarization pipeline not loaded: %s", e)
+    else:
+        logger.info("Diarization pipeline skipped (activate=false).")
 
-    try:
-        from pyannote.audio import Model
-        logger.info("Loading embedding model (%s)...", settings.embedding_model)
-        embedding_model = Model.from_pretrained(
-            settings.embedding_model,
-            use_auth_token=settings.pyannote_token,
-        )
-        logger.info("Embedding model loaded.")
-    except Exception as e:
-        logger.warning("Embedding model not loaded: %s", e)
+    if settings.embedding_activate:
+        try:
+            import torch
+            from pyannote.audio import Model
+            logger.info("Loading embedding model (%s)...", settings.embedding_model)
+            embedding_model = Model.from_pretrained(
+                settings.embedding_model,
+                token=settings.pyannote_token,
+            )
+            embedding_model = embedding_model.to(torch.device(settings.device))
+            logger.info("Embedding model loaded (device=%s).", settings.device)
+        except Exception as e:
+            logger.warning("Embedding model not loaded: %s", e)
+    else:
+        logger.info("Embedding model skipped (activate=false).")
 
-    try:
-        from faster_whisper import WhisperModel
-        logger.info(
-            "Loading Whisper model (%s, compute_type=%s)...",
-            settings.stt_model,
-            settings.stt_compute_type,
-        )
-        whisper_model = WhisperModel(
-            settings.stt_model,
-            device=settings.device,
-            compute_type=settings.stt_compute_type,
-        )
-        logger.info("Whisper model loaded.")
-    except Exception as e:
-        logger.warning("Whisper model not loaded: %s", e)
+    if settings.stt_activate:
+        try:
+            from faster_whisper import WhisperModel
+            logger.info(
+                "Loading Whisper model (%s, compute_type=%s)...",
+                settings.stt_model,
+                settings.stt_compute_type,
+            )
+            whisper_model = WhisperModel(
+                settings.stt_model,
+                device=settings.device,
+                compute_type=settings.stt_compute_type,
+            )
+            logger.info("Whisper model loaded.")
+        except Exception as e:
+            logger.warning("Whisper model not loaded: %s", e)
+    else:
+        logger.info("Whisper model skipped (activate=false).")
 
     app.state.app_state = AppState(
         settings=settings,

@@ -20,8 +20,8 @@ async def start_transcription(
     service: Annotated[TranscribeService, Depends(get_transcribe_service)],
 ) -> TranscribeResponse:
     logger.info("POST /api/transcribe | note_id=%s", body.note_id)
-    await progress_store.init(body.note_id)
-    background_tasks.add_task(service.transcribe, body.note_id)
+    await progress_store.init(body.note_id) # self init
+    background_tasks.add_task(service.transcribe, body.note_id) # sellf init
     return TranscribeResponse(
         note_id=body.note_id,
         status_url=f"/api/transcribe/{body.note_id}/status",
