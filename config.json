@@ -23,5 +23,11 @@
   "device": "cuda",
   "progress": {
     "ttl_seconds": 3600
+  },
+  "logging": {
+    "level": "INFO",
+    "folder": "logs",
+    "max_bytes": 10485760,
+    "backup_count": 10
   }
 }

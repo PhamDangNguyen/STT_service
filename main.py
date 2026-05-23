@@ -2,14 +2,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import load_settings
+from app.logging_setup import setup_logging, get_logger
 from app.state import AppState
 from app.stores.memory_store import InMemoryProgressStore
 from app.api.routes import router
+
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
+    setup_logging(settings)
+
+    logger.info("Starting STT Service (device=%s)", settings.device)
+
     db_client = AsyncIOMotorClient(
         f"mongodb+srv://{settings.mongodb_username}:{settings.mongdb_password}"
         f"@cluster0.0h1sfbi.mongodb.net/{settings.mongodb_db}"
@@ -24,41 +31,53 @@ async def lifespan(app: FastAPI):
 
     try:
         import torch
+        logger.info("Loading VAD model (silero-vad)...")
         vad_model, vad_utils = torch.hub.load(
             repo_or_dir="snakers4/silero-vad",
             model="silero_vad",
             force_reload=False,
         )
+        logger.info("VAD model loaded.")
     except Exception as e:
-        print(f"[warn] VAD model not loaded: {e}")
+        logger.warning("VAD model not loaded: %s", e)
 
     try:
         from pyannote.audio import Pipeline
+        logger.info("Loading diarization pipeline (%s)...", settings.diarization_model)
         diarization_pipeline = Pipeline.from_pretrained(
             settings.diarization_model,
             use_auth_token=settings.pyannote_token,
         )
+        logger.info("Diarization pipeline loaded.")
     except Exception as e:
-        print(f"[warn] Diarization pipeline not loaded: {e}")
+        logger.warning("Diarization pipeline not loaded: %s", e)
 
     try:
         from pyannote.audio import Model
+        logger.info("Loading embedding model (%s)...", settings.embedding_model)
         embedding_model = Model.from_pretrained(
             settings.embedding_model,
             use_auth_token=settings.pyannote_token,
         )
+        logger.info("Embedding model loaded.")
     except Exception as e:
-        print(f"[warn] Embedding model not loaded: {e}")
+        logger.warning("Embedding model not loaded: %s", e)
 
     try:
         from faster_whisper import WhisperModel
+        logger.info(
+            "Loading Whisper model (%s, compute_type=%s)...",
+            settings.stt_model,
+            settings.stt_compute_type,
+        )
         whisper_model = WhisperModel(
             settings.stt_model,
             device=settings.device,
             compute_type=settings.stt_compute_type,
         )
+        logger.info("Whisper model loaded.")
     except Exception as e:
-        print(f"[warn] Whisper model not loaded: {e}")
+        logger.warning("Whisper model not loaded: %s", e)
 
     app.state.app_state = AppState(
         settings=settings,
@@ -71,9 +90,11 @@ async def lifespan(app: FastAPI):
         whisper_model=whisper_model,
     )
 
+    logger.info("All models loaded. STT Service is ready.")
     yield
 
     db_client.close()
+    logger.info("STT Service shut down.")
 
 
 app = FastAPI(title="STT Service", lifespan=lifespan)

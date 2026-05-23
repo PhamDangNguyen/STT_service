@@ -1,10 +1,13 @@
 from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from ..exceptions import ProgressNotFoundError
+from ..logging_setup import get_logger
 from ..stores.base import ProgressStore
 from ..services.transcribe_service import TranscribeService
 from .deps import get_progress_store, get_transcribe_service
 from .schemas import TranscribeRequest, TranscribeResponse, StatusResponse
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/transcribe", tags=["transcribe"])
 
@@ -16,6 +19,7 @@ async def start_transcription(
     progress_store: Annotated[ProgressStore, Depends(get_progress_store)],
     service: Annotated[TranscribeService, Depends(get_transcribe_service)],
 ) -> TranscribeResponse:
+    logger.info("POST /api/transcribe | note_id=%s", body.note_id)
     await progress_store.init(body.note_id)
     background_tasks.add_task(service.transcribe, body.note_id)
     return TranscribeResponse(
@@ -33,6 +37,7 @@ async def get_status(
     response.headers["Cache-Control"] = "no-store"
     record = await progress_store.get(note_id)
     if record is None:
+        logger.debug("GET status | note_id=%s not found", note_id)
         raise HTTPException(
             status_code=404,
             detail=f"No transcription job found for note_id={note_id}",

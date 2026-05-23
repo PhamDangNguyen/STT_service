@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-4o"
     device: str = "cuda"
     progress_ttl_seconds: int = 3600
+    log_level: str = "INFO"
+    log_folder: str = "logs"
+    log_max_bytes: int = 10485760  # 10 MB
+    log_backup_count: int = 10
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -51,4 +55,14 @@ def load_settings() -> Settings:
             overrides["device"] = raw["device"]
         if "progress" in raw and "ttl_seconds" in raw["progress"]:
             overrides["progress_ttl_seconds"] = raw["progress"]["ttl_seconds"]
+        if "logging" in raw:
+            lg = raw["logging"]
+            if "level" in lg:
+                overrides["log_level"] = lg["level"]
+            if "folder" in lg:
+                overrides["log_folder"] = lg["folder"]
+            if "max_bytes" in lg:
+                overrides["log_max_bytes"] = lg["max_bytes"]
+            if "backup_count" in lg:
+                overrides["log_backup_count"] = lg["backup_count"]
     return Settings(**overrides)
