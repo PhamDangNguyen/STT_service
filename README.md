@@ -70,3 +70,20 @@ uv add <package>             # Add a dependency
 ## Tech Stack
 
 FastAPI · Motor (async MongoDB) · silero-vad · pyannote/speaker-diarization-3.1 · faster-whisper · OpenAI / Anthropic (LLM normalization) · pydantic-settings
+
+## How to run?
+ru API:
+```bash
+uv run main.py
+```
+**Test API**:
+- Request a note_id processing:
+```bash
+curl -X POST "http://localhost:8000/api/transcribe" \
+  -H "Content-Type: application/json" \
+  -d '{"note_id":"6a0e85c5d53b217361854b62"}'
+```
+- Get status:
+```bash
+curl "http://localhost:8000/api/transcribe/6a0e85c5d53b217361854b62/status"
+```
