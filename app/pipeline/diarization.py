@@ -90,10 +90,10 @@ class DiarizationStep(PipelineStep[DiarizationInput, DiarizationOutput]):
 
     def _embed(self, audio: np.ndarray) -> np.ndarray:
         import torch
-        waveform = torch.from_numpy(audio).unsqueeze(0).unsqueeze(0).to(self._device)
-        with torch.no_grad():
-            emb = self._embedding_model(waveform)
-        vec = emb.squeeze().cpu().numpy().astype(np.float32)
+        # Inference wrapper expects {"waveform": [1, T], "sample_rate": int} on CPU
+        waveform = torch.from_numpy(audio).unsqueeze(0).float()
+        result = self._embedding_model({"waveform": waveform, "sample_rate": SAMPLE_RATE})
+        vec = np.array(result, dtype=np.float32).flatten()
         norm = np.linalg.norm(vec)
         return vec / norm if norm > 0 else vec
 
@@ -160,9 +160,9 @@ class DiarizationStep(PipelineStep[DiarizationInput, DiarizationOutput]):
             norm = np.linalg.norm(avg)
             best_entry.embedding = avg / norm if norm > 0 else avg
             best_entry.count += 1
-            logger.debug(
-                "Speaker matched: → %s  (sim=%.3f, contributions=%d)",
-                best_entry.name, best_sim, best_entry.count,
+            logger.info(
+                "Speaker matched: → %s  (sim=%.3f >= threshold=%.2f, contributions=%d)",
+                best_entry.name, best_sim, self._similarity_threshold, best_entry.count,
             )
             return best_entry.name
 
@@ -170,7 +170,7 @@ class DiarizationStep(PipelineStep[DiarizationInput, DiarizationOutput]):
         new_name = f"SPEAKER_{counter[0]:02d}"
         counter[0] += 1
         registry.append(_SpeakerEntry(name=new_name, embedding=emb))
-        logger.debug(
+        logger.info(
             "New speaker registered: %s  (best_sim=%.3f < threshold=%.2f)",
             new_name, best_sim, self._similarity_threshold,
         )
