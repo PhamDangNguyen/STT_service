@@ -66,13 +66,15 @@ async def lifespan(app: FastAPI):
     if settings.embedding_activate:
         try:
             import torch
-            from pyannote.audio import Model
+            from pyannote.audio import Model, Inference
             logger.info("Loading embedding model (%s)...", settings.embedding_model)
-            embedding_model = Model.from_pretrained(
+            _raw_embed = Model.from_pretrained(
                 settings.embedding_model,
                 token=settings.pyannote_token,
             )
-            embedding_model = embedding_model.to(torch.device(settings.device))
+            _raw_embed = _raw_embed.to(torch.device(settings.device))
+            _raw_embed.eval()
+            embedding_model = Inference(_raw_embed, window="whole")
             logger.info("Embedding model loaded (device=%s).", settings.device)
         except Exception as e:
             logger.warning("Embedding model not loaded: %s", e)

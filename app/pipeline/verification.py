@@ -1,8 +1,6 @@
 import asyncio
-import io
 
 import numpy as np
-import soundfile as sf
 
 from .base import PipelineStep
 from .models import (
@@ -53,13 +51,9 @@ class VerificationStep(PipelineStep[VerificationInput, VerificationOutput]):
 
     def _embed(self, audio: np.ndarray) -> np.ndarray:
         import torch
-        buf = io.BytesIO()
-        sf.write(buf, audio, SAMPLE_RATE, format="WAV", subtype="PCM_16")
-        buf.seek(0)
-        waveform = torch.from_numpy(audio).unsqueeze(0).to(self._device)
-        with torch.no_grad():
-            emb = self._model({"waveform": waveform, "sample_rate": SAMPLE_RATE})
-        return emb.squeeze().cpu().numpy()
+        waveform = torch.from_numpy(audio).unsqueeze(0).float()
+        result = self._model({"waveform": waveform, "sample_rate": SAMPLE_RATE})
+        return np.array(result, dtype=np.float32).flatten()
 
     @staticmethod
     def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
